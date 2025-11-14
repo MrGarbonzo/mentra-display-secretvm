@@ -146,7 +146,6 @@ class ExampleMentraOSApp extends AppServer {
 
 // Start the server
 const app = new ExampleMentraOSApp();
-app.start().catch(console.error);
 
 console.log('='.repeat(50));
 console.log('Display Example App starting...');
@@ -154,3 +153,21 @@ console.log('Pairing code:', PAIRING_CODE);
 console.log('Simulator URL:', SIMULATOR_URL);
 console.log('Make sure simulator is running first!');
 console.log('='.repeat(50));
+
+app.start().catch((error) => {
+  console.error('Failed to start app:', error);
+  console.log('App will keep running and retry connection...');
+});
+
+// Keep the process alive
+process.on('SIGTERM', () => {
+  console.log('Received SIGTERM, shutting down...');
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('Received SIGINT, shutting down...');
+  process.exit(0);
+});
+
+console.log('App is running. Press Ctrl+C to exit.');
