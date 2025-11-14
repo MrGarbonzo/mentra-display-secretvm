@@ -36,32 +36,26 @@ COPY --chown=node:node tsconfig.json* ./
 # ============================================
 FROM node:20-slim AS runtime
 
-# Install tsx for TypeScript execution
-RUN npm install -g tsx
-
 WORKDIR /app
 
 # Copy node_modules and SDK from builder
-COPY --from=app-builder --chown=node:node /app/node_modules ./node_modules
-COPY --from=app-builder --chown=node:node /app/sdk-simulator ./sdk-simulator
+COPY --from=app-builder /app/node_modules ./node_modules
+COPY --from=app-builder /app/sdk-simulator ./sdk-simulator
 
 # Copy application source
-COPY --chown=node:node src ./src
-COPY --chown=node:node package*.json ./
+COPY src ./src
+COPY package*.json ./
 
 # Environment variables (override at runtime)
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV PACKAGE_NAME=com.mentra.display.tee
 ENV MENTRAOS_API_KEY=simulator-mode
-ENV SIMULATOR_URL=ws://mentraos-simulator:3001
+ENV SIMULATOR_URL=ws://localhost:3001
 ENV PAIRING_CODE=000000
 
 # Expose port
 EXPOSE 3000
 
-# Switch to non-root user
-USER node
-
-# Default command: run display app
-CMD ["tsx", "src/index.ts"]
+# Default command: run display app using npx tsx
+CMD ["npx", "tsx", "src/index.ts"]

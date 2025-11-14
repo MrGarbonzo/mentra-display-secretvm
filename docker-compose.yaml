@@ -1,12 +1,12 @@
 version: '3.8'
 
 services:
-  mentraos-display-tee:
+  display-app:
     # Using GitHub Container Registry image with digest for immutability
     # Built by GitHub Actions from main branch
-    image: ghcr.io/mrgarbonzo/mentra-display-secretvm:latest@sha256:2a2f598e353fe27906811b5737f714319c362e1b8f92c33997797b102ce2eec6
+    image: ghcr.io/mrgarbonzo/mentra-display-secretvm:latest
 
-    container_name: mentraos-display-tee
+    container_name: mentraos-display-app
 
     # Environment variables for production deployment
     environment:
@@ -22,8 +22,8 @@ services:
       # Production mode
       - NODE_ENV=production
 
-      # Simulator connection (will connect to mentraos-simulator service)
-      - SIMULATOR_URL=${SIMULATOR_URL:-ws://mentraos-simulator:3001}
+      # Simulator connection URL (set this to connect to external simulator)
+      - SIMULATOR_URL=${SIMULATOR_URL:-ws://localhost:3001}
 
       # Pairing code for simulator
       - PAIRING_CODE=${PAIRING_CODE:-000000}
@@ -56,9 +56,6 @@ services:
     # Security options
     security_opt:
       - no-new-privileges:true
-
-    # Run as non-root user
-    user: "1000:1000"
 
 # Networks (optional, configure based on SecretVM requirements)
 networks:
