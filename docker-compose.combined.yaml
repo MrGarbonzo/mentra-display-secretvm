@@ -10,6 +10,7 @@ services:
       - NODE_ENV=production
       - PORT=3001
       - HOST=0.0.0.0
+      - PAIRING_CODE=${PAIRING_CODE:-000000}
 
     ports:
       - "3001:3001"  # WebSocket server + GUI
