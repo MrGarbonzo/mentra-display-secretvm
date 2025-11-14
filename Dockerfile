@@ -1,12 +1,11 @@
-# Multi-stage Dockerfile for MentraOS Display Example App
-# This containerizes the transcription/display app for deployment to SecretVM TEE
+# Production Dockerfile for MentraOS Display App
+# Deploys transcription/display app to SecretVM TEE
 #
-# NOTE: This Dockerfile expects to be built from the parent directory (F:\coding\Mentra\)
-# Build command: docker build -f MentraOS-Display-Example-App/Dockerfile -t mentraos-display-tee .
+# Build command: docker build -t mentraos-display-tee .
 
 FROM node:20-slim AS base
 
-# Install dependencies needed for building
+# Install build dependencies
 RUN apt-get update && apt-get install -y \
     python3 \
     build-essential \
@@ -19,10 +18,10 @@ FROM base AS sdk-builder
 
 WORKDIR /sdk-simulator
 
-# Copy SDK simulator source (from build context root)
-COPY --chown=node:node glasses_emulator/packages/sdk-simulator ./
+# Copy SDK simulator source
+COPY --chown=node:node sdk-simulator/ ./
 
-# Install SDK dependencies and build
+# Install and build SDK
 RUN npm ci && npm run build
 
 # ============================================
@@ -33,21 +32,17 @@ FROM base AS app-builder
 WORKDIR /app
 
 # Copy package files
-COPY --chown=node:node MentraOS-Display-Example-App/package*.json ./
+COPY --chown=node:node package*.json ./
 
 # Copy built SDK from previous stage
-COPY --from=sdk-builder --chown=node:node /sdk-simulator /app/sdk-simulator
+COPY --from=sdk-builder --chown=node:node /sdk-simulator ./sdk-simulator
 
-# Create node_modules/@mentra/sdk symlink to simulator
-RUN mkdir -p node_modules/@mentra && \
-    ln -s /app/sdk-simulator node_modules/@mentra/sdk
-
-# Install app dependencies (excluding the local file: dependency)
+# Install dependencies
 RUN npm install --omit=optional
 
 # Copy application source
-COPY --chown=node:node MentraOS-Display-Example-App/src ./src
-COPY --chown=node:node MentraOS-Display-Example-App/tsconfig.json* ./
+COPY --chown=node:node src ./src
+COPY --chown=node:node tsconfig.json* ./
 
 # ============================================
 # Stage 3: Production Runtime
@@ -64,25 +59,20 @@ COPY --from=app-builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=app-builder --chown=node:node /app/sdk-simulator ./sdk-simulator
 
 # Copy application source
-COPY --chown=node:node MentraOS-Display-Example-App/src ./src
-COPY --chown=node:node MentraOS-Display-Example-App/package*.json ./
+COPY --chown=node:node src ./src
+COPY --chown=node:node package*.json ./
 
-# Create @mentra/sdk symlink
-RUN mkdir -p node_modules/@mentra && \
-    ln -s /app/sdk-simulator node_modules/@mentra/sdk
-
-# Environment variables (can be overridden at runtime)
+# Environment variables (override at runtime)
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV PACKAGE_NAME=com.mentra.display.tee
-ENV MENTRAOS_API_KEY=simulator-mode
+ENV MENTRAOS_API_KEY=production-key-required
 
-# Expose port (optional, depends on deployment)
+# Expose port
 EXPOSE 3000
 
 # Switch to non-root user
 USER node
 
 # Default command: run display app
-# Pass pairing code as first argument if needed
 CMD ["tsx", "src/index.ts"]

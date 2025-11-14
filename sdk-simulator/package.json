@@ -1,0 +1,27 @@
+{
+  "name": "@mentra/sdk-simulator",
+  "version": "0.1.0",
+  "description": "Mock MentraOS SDK for testing apps without physical glasses",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "clean": "rm -rf dist"
+  },
+  "keywords": [
+    "mentraos",
+    "simulator",
+    "mock",
+    "sdk"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "socket.io-client": "^4.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.9.0",
+    "typescript": "^5.2.2"
+  }
+}

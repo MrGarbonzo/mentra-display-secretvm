@@ -11,7 +11,7 @@
   "license": "ISC",
   "description": "",
   "dependencies": {
-    "@mentra/sdk-simulator": "file:../glasses_emulator/packages/sdk-simulator",
+    "@mentra/sdk-simulator": "file:./sdk-simulator",
     "express": "^4.21.2",
     "socket.io-client": "^4.8.1",
     "ws": "^8.18.1"
