@@ -12,20 +12,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # ============================================
-# Stage 1: Build SDK Simulator
-# ============================================
-FROM base AS sdk-builder
-
-WORKDIR /sdk-simulator
-
-# Copy SDK simulator source
-COPY --chown=node:node sdk-simulator/ ./
-
-# Install and build SDK
-RUN npm ci && npm run build
-
-# ============================================
-# Stage 2: Build Application
+# Stage 1: Build Application
 # ============================================
 FROM base AS app-builder
 
@@ -34,8 +21,8 @@ WORKDIR /app
 # Copy package files
 COPY --chown=node:node package*.json ./
 
-# Copy built SDK from previous stage
-COPY --from=sdk-builder --chown=node:node /sdk-simulator ./sdk-simulator
+# Copy pre-built SDK simulator (already compiled)
+COPY --chown=node:node sdk-simulator ./sdk-simulator
 
 # Install dependencies
 RUN npm install --omit=optional
@@ -45,7 +32,7 @@ COPY --chown=node:node src ./src
 COPY --chown=node:node tsconfig.json* ./
 
 # ============================================
-# Stage 3: Production Runtime
+# Stage 2: Production Runtime
 # ============================================
 FROM node:20-slim AS runtime
 
@@ -54,7 +41,7 @@ RUN npm install -g tsx
 
 WORKDIR /app
 
-# Copy node_modules and built SDK
+# Copy node_modules and SDK from builder
 COPY --from=app-builder --chown=node:node /app/node_modules ./node_modules
 COPY --from=app-builder --chown=node:node /app/sdk-simulator ./sdk-simulator
 
