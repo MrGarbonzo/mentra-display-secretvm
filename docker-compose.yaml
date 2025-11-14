@@ -1,34 +1,52 @@
 version: '3.8'
 
 services:
-  display-app:
-    # Using GitHub Container Registry image with digest for immutability
-    # Built by GitHub Actions from main branch
-    image: ghcr.io/mrgarbonzo/mentra-display-secretvm:latest
+  # MentraOS Glasses Simulator - Provides visual GUI and WebSocket server
+  simulator:
+    image: ghcr.io/mrgarbonzo/mentra_sim_tee:latest
+    container_name: mentraos-simulator
 
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - HOST=0.0.0.0
+
+    ports:
+      - "3001:3001"  # WebSocket server + GUI
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(3001, 'localhost').on('connect', () => process.exit(0)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    security_opt:
+      - no-new-privileges:true
+
+    networks:
+      - mentraos-network
+
+  # Display App - Connects to simulator and displays transcriptions
+  display-app:
+    image: ghcr.io/mrgarbonzo/mentra-display-secretvm:latest
     container_name: mentraos-display-app
 
-    # Environment variables for production deployment
+    depends_on:
+      simulator:
+        condition: service_healthy
+
     environment:
-      # Package identifier for the app
       - PACKAGE_NAME=com.mentra.display.tee
-
-      # MentraOS API key (use simulator-mode for testing)
       - MENTRAOS_API_KEY=${MENTRAOS_API_KEY:-simulator-mode}
-
-      # Server port
       - PORT=3000
-
-      # Production mode
       - NODE_ENV=production
-
-      # Simulator connection URL (set this to connect to external simulator)
-      - SIMULATOR_URL=${SIMULATOR_URL:-ws://localhost:3001}
-
-      # Pairing code for simulator
+      # Connect to simulator via Docker network
+      - SIMULATOR_URL=ws://simulator:3001
       - PAIRING_CODE=${PAIRING_CODE:-000000}
 
-    # Expose port (adjust based on SecretVM networking requirements)
     ports:
       - "3000:3000"
 
@@ -57,11 +75,10 @@ services:
     security_opt:
       - no-new-privileges:true
 
-# Networks (optional, configure based on SecretVM requirements)
-networks:
-  default:
-    driver: bridge
+    networks:
+      - mentraos-network
 
-# Volumes (if needed for persistent storage)
-# volumes:
-#   app-data:
+# Shared network for simulator and display app communication
+networks:
+  mentraos-network:
+    driver: bridge
