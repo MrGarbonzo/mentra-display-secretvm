@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # MentraOS Glasses Simulator - Provides visual GUI and WebSocket server
+  simulator:
+    image: ghcr.io/mrgarbonzo/mentra_sim_tee:latest
+    container_name: mentraos-simulator
+
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - HOST=0.0.0.0
+
+    ports:
+      - "3001:3001"  # WebSocket server + GUI
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(3001, 'localhost').on('connect', () => process.exit(0)).on('error', () => process.exit(1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+    security_opt:
+      - no-new-privileges:true
+
+    networks:
+      - mentraos-network
+
+  # Display App - Connects to simulator and displays transcriptions
+  display-app:
+    image: ghcr.io/mrgarbonzo/mentra-display-secretvm:latest
+    container_name: mentraos-display-app
+
+    depends_on:
+      simulator:
+        condition: service_healthy
+
+    environment:
+      - PACKAGE_NAME=com.mentra.display.tee
+      - MENTRAOS_API_KEY=${MENTRAOS_API_KEY:-simulator-mode}
+      - PORT=3000
+      - NODE_ENV=production
+      # Connect to simulator via Docker network
+      - SIMULATOR_URL=ws://simulator:3001
+      - PAIRING_CODE=${PAIRING_CODE:-000000}
+
+    ports:
+      - "3000:3000"
+
+    # Resource limits (adjust based on SecretVM tier)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+
+    networks:
+      - mentraos-network
+
+# Shared network for simulator and display app communication
+networks:
+  mentraos-network:
+    driver: bridge

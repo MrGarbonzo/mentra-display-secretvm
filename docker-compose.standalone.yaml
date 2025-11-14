@@ -1,0 +1,63 @@
+version: '3.8'
+
+# Standalone Display App deployment
+# Use this when you have an external simulator running elsewhere
+
+services:
+  display-app:
+    image: ghcr.io/mrgarbonzo/mentra-display-secretvm:latest
+    container_name: mentraos-display-app
+
+    environment:
+      # Package identifier for the app
+      - PACKAGE_NAME=com.mentra.display.tee
+
+      # MentraOS API key (use simulator-mode for testing)
+      - MENTRAOS_API_KEY=${MENTRAOS_API_KEY:-simulator-mode}
+
+      # Server port
+      - PORT=3000
+
+      # Production mode
+      - NODE_ENV=production
+
+      # Simulator connection URL (set this to your external simulator)
+      # Default: ws://localhost:3001 for local simulator
+      # Example: ws://simulator-host:3001 for remote simulator
+      - SIMULATOR_URL=${SIMULATOR_URL:-ws://localhost:3001}
+
+      # Pairing code for simulator
+      - PAIRING_CODE=${PAIRING_CODE:-000000}
+
+    # Expose port
+    ports:
+      - "3000:3000"
+
+    # Resource limits (adjust based on SecretVM tier)
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # Restart policy
+    restart: unless-stopped
+
+    # Health check
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+    # Security options
+    security_opt:
+      - no-new-privileges:true
+
+networks:
+  default:
+    driver: bridge
