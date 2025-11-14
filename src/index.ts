@@ -144,7 +144,7 @@ class ExampleMentraOSApp extends AppServer {
   }
 }
 
-// Start the server
+// Start the server with retry logic
 const app = new ExampleMentraOSApp();
 
 console.log('='.repeat(50));
@@ -154,10 +154,30 @@ console.log('Simulator URL:', SIMULATOR_URL);
 console.log('Make sure simulator is running first!');
 console.log('='.repeat(50));
 
-app.start().catch((error) => {
-  console.error('Failed to start app:', error);
-  console.log('App will keep running and retry connection...');
-});
+async function startWithRetry(maxRetries = 10, delayMs = 5000) {
+  let attempt = 0;
+
+  while (attempt < maxRetries) {
+    try {
+      await app.start();
+      console.log('✅ Successfully connected!');
+      break;
+    } catch (error: any) {
+      attempt++;
+      console.error(`❌ Connection attempt ${attempt}/${maxRetries} failed:`, error.message);
+
+      if (attempt < maxRetries) {
+        console.log(`⏳ Retrying in ${delayMs/1000} seconds...`);
+        await new Promise(resolve => setTimeout(resolve, delayMs));
+      } else {
+        console.error('❌ Max retries reached. App will exit.');
+        process.exit(1);
+      }
+    }
+  }
+}
+
+startWithRetry();
 
 // Keep the process alive
 process.on('SIGTERM', () => {
