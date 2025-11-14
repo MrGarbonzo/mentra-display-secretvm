@@ -53,7 +53,9 @@ COPY --chown=node:node package*.json ./
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV PACKAGE_NAME=com.mentra.display.tee
-ENV MENTRAOS_API_KEY=production-key-required
+ENV MENTRAOS_API_KEY=simulator-mode
+ENV SIMULATOR_URL=ws://mentraos-simulator:3001
+ENV PAIRING_CODE=000000
 
 # Expose port
 EXPOSE 3000

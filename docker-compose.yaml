@@ -2,10 +2,9 @@ version: '3.8'
 
 services:
   mentraos-display-tee:
-    # IMPORTANT: Replace with your actual image digest after building and pushing
-    # Format: image: <registry>/<image>:<tag>@sha256:<digest>
-    # Example: image: ghcr.io/yourusername/mentraos-display-tee:v1.0.0@sha256:abc123...
-    image: mentraos-display-tee:latest
+    # Using GitHub Container Registry image with digest for immutability
+    # Built by GitHub Actions from main branch
+    image: ghcr.io/mrgarbonzo/mentra-display-secretvm:latest@sha256:2a2f598e353fe27906811b5737f714319c362e1b8f92c33997797b102ce2eec6
 
     container_name: mentraos-display-tee
 
@@ -14,14 +13,20 @@ services:
       # Package identifier for the app
       - PACKAGE_NAME=com.mentra.display.tee
 
-      # MentraOS API key (REPLACE WITH PRODUCTION KEY)
-      - MENTRAOS_API_KEY=${MENTRAOS_API_KEY:-production-key-here}
+      # MentraOS API key (use simulator-mode for testing)
+      - MENTRAOS_API_KEY=${MENTRAOS_API_KEY:-simulator-mode}
 
       # Server port
       - PORT=3000
 
       # Production mode
       - NODE_ENV=production
+
+      # Simulator connection (will connect to mentraos-simulator service)
+      - SIMULATOR_URL=${SIMULATOR_URL:-ws://mentraos-simulator:3001}
+
+      # Pairing code for simulator
+      - PAIRING_CODE=${PAIRING_CODE:-000000}
 
     # Expose port (adjust based on SecretVM networking requirements)
     ports:

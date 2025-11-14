@@ -3,6 +3,8 @@ import { AppServer, AppSession, ViewType } from '@mentra/sdk';
 const PACKAGE_NAME = process.env.PACKAGE_NAME || 'com.example.displayapp';
 const MENTRAOS_API_KEY = process.env.MENTRAOS_API_KEY || 'simulator-mode';
 const PORT = parseInt(process.env.PORT || '3000');
+const SIMULATOR_URL = process.env.SIMULATOR_URL || 'ws://localhost:3001';
+const PAIRING_CODE = process.env.PAIRING_CODE || process.argv[2] || '000000';
 
 class ExampleMentraOSApp extends AppServer {
 
@@ -13,8 +15,8 @@ class ExampleMentraOSApp extends AppServer {
       port: PORT,
       simulator: {
         enabled: true,
-        url: 'ws://localhost:3001',
-        code: process.argv[2] || '000000',
+        url: SIMULATOR_URL,
+        code: PAIRING_CODE,
       },
     });
   }
@@ -148,7 +150,7 @@ app.start().catch(console.error);
 
 console.log('='.repeat(50));
 console.log('Display Example App starting...');
-console.log('Pairing code:', process.argv[2] || '000000');
-console.log('Simulator URL: ws://localhost:3001');
+console.log('Pairing code:', PAIRING_CODE);
+console.log('Simulator URL:', SIMULATOR_URL);
 console.log('Make sure simulator is running first!');
 console.log('='.repeat(50));
