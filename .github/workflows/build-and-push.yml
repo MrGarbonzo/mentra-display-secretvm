@@ -2,9 +2,9 @@ name: Build and Push Docker Image
 
 on:
   push:
-    tags:
-      - 'v*.*.*'  # Triggers on version tags like v1.0.0
-  workflow_dispatch:  # Allows manual trigger
+    branches:
+      - main
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -39,8 +39,9 @@ jobs:
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
           tags: |
-            type=ref,event=tag
+            type=ref,event=branch
             type=sha
+            type=raw,value=latest,enable={{is_default_branch}}
 
       - name: Build and push Docker image
         id: build-and-push
@@ -54,57 +55,3 @@ jobs:
           platforms: linux/amd64
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Generate image digest
-        id: digest
-        run: |
-          echo "Image pushed with digest: ${{ steps.build-and-push.outputs.digest }}"
-          echo "Full image reference:"
-          echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build-and-push.outputs.digest }}"
-
-          # Create a file with the full image reference for SecretVM deployment
-          mkdir -p deployment
-          echo "${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build-and-push.outputs.digest }}" > deployment/image-reference.txt
-
-      - name: Upload deployment artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: deployment-info
-          path: deployment/
-
-      - name: Create Release
-        if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v1
-        with:
-          body: |
-            ## Docker Image
-
-            **SecretVM Deployment Image:**
-            ```
-            ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build-and-push.outputs.digest }}
-            ```
-
-            **Update your `docker-compose.yaml`:**
-            ```yaml
-            services:
-              mentraos-display-tee:
-                image: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build-and-push.outputs.digest }}
-            ```
-
-            ## Verification
-
-            To verify the image digest:
-            ```bash
-            docker pull ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build-and-push.outputs.digest }}
-            docker inspect ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build-and-push.outputs.digest }}
-            ```
-
-            ## Deployment
-
-            1. Update `docker-compose.yaml` with the image reference above
-            2. Deploy to SecretVM following the deployment guide
-            3. Extract TEE attestation proof
-            4. Verify the deployment
-
-            Built from commit: ${{ github.sha }}
-          files: deployment/*
